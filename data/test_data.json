@@ -1,0 +1,93 @@
+[
+  {
+    "username": "ivanov",
+    "email": "ivanov@example.com",
+    "first_name": "Иван",
+    "last_name": "Иванов",
+    "password": "TestPass123",
+    "is_staff": false,
+    "recipes": [
+      {
+        "name": "Борщ с мясом",
+        "text": "Классический борщ с говядиной и свеклой. Подавать со сметаной и зеленью.",
+        "cooking_time": 120,
+        "tags": ["lunch", "dinner"],
+        "ingredients": [
+          {"name": "говядина", "amount": 500},
+          {"name": "свекла", "amount": 200},
+          {"name": "картофель", "amount": 300},
+          {"name": "морковь", "amount": 100},
+          {"name": "лук репчатый", "amount": 100},
+          {"name": "капуста белокочанная", "amount": 200},
+          {"name": "томатная паста", "amount": 60},
+          {"name": "чеснок", "amount": 10},
+          {"name": "соль", "amount": 5}
+        ]
+      },
+      {
+        "name": "Овсяная каша с ягодами",
+        "text": "Полезный завтрак: овсянка с замороженными ягодами и медом.",
+        "cooking_time": 15,
+        "tags": ["breakfast"],
+        "ingredients": [
+          {"name": "овсяные хлопья", "amount": 80},
+          {"name": "молоко", "amount": 200},
+          {"name": "сливочное масло", "amount": 20},
+          {"name": "мед", "amount": 30},
+          {"name": "ягоды замороженные", "amount": 50}
+        ]
+      }
+    ]
+  },
+  {
+    "username": "petrova",
+    "email": "petrova@example.com",
+    "first_name": "Мария",
+    "last_name": "Петрова",
+    "password": "TestPass123",
+    "is_staff": false,
+    "recipes": [
+      {
+        "name": "Цезарь с курицей",
+        "text": "Популярный салат с куриным филе, пармезаном и соусом цезарь.",
+        "cooking_time": 30,
+        "tags": ["lunch", "dinner"],
+        "ingredients": [
+          {"name": "куриное филе", "amount": 300},
+          {"name": "салат айсберг", "amount": 150},
+          {"name": "пармезан", "amount": 50},
+          {"name": "помидоры черри", "amount": 100},
+          {"name": "батон", "amount": 80},
+          {"name": "оливковое масло", "amount": 30},
+          {"name": "чеснок", "amount": 5}
+        ]
+      }
+    ]
+  },
+  {
+    "username": "admin",
+    "email": "admin@example.com",
+    "first_name": "Админ",
+    "last_name": "Админов",
+    "password": "AdminPass123",
+    "is_staff": true,
+    "recipes": [
+      {
+        "name": "Шоколадный кекс",
+        "text": "Нежный шоколадный кекс с какао. Отличный десерт к чаю.",
+        "cooking_time": 60,
+        "tags": ["breakfast", "dinner"],
+        "ingredients": [
+          {"name": "пшеничная мука", "amount": 200},
+          {"name": "сахар", "amount": 150},
+          {"name": "какао-порошок", "amount": 30},
+          {"name": "сливочное масло", "amount": 100},
+          {"name": "яйца куриные", "amount": 3},
+          {"name": "молоко", "amount": 100},
+          {"name": "разрыхлитель", "amount": 5},
+          {"name": "соль", "amount": 2}
+        ]
+      }
+    ]
+  }
+]
