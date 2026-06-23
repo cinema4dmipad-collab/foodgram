@@ -65,6 +65,9 @@ DATABASES = {
 
 AUTH_USER_MODEL = 'api.User'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = ['https://www.pract.space', 'https://pract.space']
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
