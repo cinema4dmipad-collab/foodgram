@@ -56,15 +56,28 @@ jobs:
           source: infra/
           target: /home/${{ secrets.USER }}/foodgram/
           strip_components: 1
-      - name: Create .env if missing
+      - name: Write .env from secrets
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /home/${{ secrets.USER }}/foodgram
-            test -f .env || cp .env.example .env
+            cat > /home/${{ secrets.USER }}/foodgram/.env << 'EOF'
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            DEBUG=False
+            ALLOWED_HOSTS=${{ secrets.HOST }},localhost,127.0.0.1
+            DB_ENGINE=django.db.backends.postgresql
+            DB_NAME=foodgram
+            DB_USER=foodgram_user
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_HOST=db
+            DB_PORT=5432
+            POSTGRES_DB=foodgram
+            POSTGRES_USER=foodgram_user
+            POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}
+            EOF
       - name: Deploy containers
         uses: appleboy/ssh-action@v1.0.3
         with:
