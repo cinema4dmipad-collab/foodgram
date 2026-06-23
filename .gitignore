@@ -1,6 +1,7 @@
 frontend/node_modules
 infra/frontend/build
 .env
+AGENTS.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
