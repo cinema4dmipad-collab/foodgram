@@ -1,11 +1,12 @@
 from django.db.models import Exists, OuterRef, Sum
 from django.db.models.functions import Lower
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
-    ListAPIView, get_object_or_404,
+    ListAPIView,
 )
 from rest_framework.permissions import (
     IsAuthenticated, IsAuthenticatedOrReadOnly,
@@ -25,6 +26,11 @@ from .serializers import (
     RecipeMinifiedSerializer, TagSerializer,
     UserWithRecipesSerializer,
 )
+
+
+def redirect_to_recipe(request, code):
+    recipe = get_object_or_404(Recipe, short_code=code)
+    return redirect(f'/recipes/{recipe.id}/')
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -116,7 +122,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
         recipe = self.get_object()
-        short_link = recipe.short_code
+        short_link = request.build_absolute_uri(
+            f'/s/{recipe.short_code}/'
+        )
         return Response({'short-link': short_link})
 
     @action(detail=True, methods=['post'], url_path='favorite')

@@ -1,3 +1,4 @@
+import binascii
 import base64
 import uuid
 
@@ -19,7 +20,7 @@ class Base64ImageField(serializers.ImageField):
                 ext = 'png'
             try:
                 decoded = base64.b64decode(imgstr)
-            except Exception:
+            except (binascii.Error, ValueError):
                 raise serializers.ValidationError(
                     'Не удалось декодировать base64 изображение'
                 )

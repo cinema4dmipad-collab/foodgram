@@ -204,6 +204,17 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'name', 'text', 'cooking_time',
         )
 
+    def validate(self, data):
+        if not data.get('tags'):
+            raise serializers.ValidationError(
+                {'tags': 'Нужно указать хотя бы один тег'}
+            )
+        if not data.get('ingredients'):
+            raise serializers.ValidationError(
+                {'ingredients': 'Нужно указать хотя бы один ингредиент'}
+            )
+        return data
+
     @transaction.atomic
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
