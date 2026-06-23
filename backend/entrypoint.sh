@@ -9,6 +9,7 @@ if [ "$DB_ENGINE" = "django.db.backends.postgresql" ]; then
     echo "PostgreSQL is ready."
 fi
 
+python manage.py makemigrations --noinput
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
