@@ -310,7 +310,6 @@ class SubscribeView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def partial_update(self, request, *args, **kwargs):
-        """Обновление рецепта (частичное)"""
         recipe = self.get_object()
         if recipe.author != request.user:
             return Response(
@@ -359,9 +358,6 @@ class AvatarView(APIView):
 
 
 class UserDetailView(generics.RetrieveAPIView):
-    """
-    Получение пользователя по ID с его рецептами.
-    """
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = []
