@@ -5,9 +5,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
+SECRET_KEY = os.getenv(
+    'SECRET_KEY',
+    'django-insecure-dev-key-change-in-production'
+)
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',')
+ALLOWED_HOSTS = os.getenv(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1, testserver'
+).split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
