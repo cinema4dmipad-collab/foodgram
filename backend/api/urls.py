@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 
 from . import views
@@ -14,6 +14,7 @@ urlpatterns = [
     path('users/me/', views.UserMeView.as_view()),
     path('users/me/avatar/', views.AvatarView.as_view()),
     path('users/<int:pk>/', views.UserDetailView.as_view()),
+    path('auth/', include('djoser.urls.authtoken')),
 ]
 
 urlpatterns += router.urls

@@ -7,7 +7,6 @@ from django.views.generic import TemplateView
 from api.views import redirect_to_recipe
 
 urlpatterns = [
-    path('api/auth/', include('djoser.urls.authtoken')),
     path('api/', include('api.urls')),
     path('api/', include('djoser.urls')),
     path('admin/', admin.site.urls),

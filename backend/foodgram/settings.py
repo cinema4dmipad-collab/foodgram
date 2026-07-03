@@ -56,6 +56,10 @@ TEMPLATES = [
     },
 ]
 
+PAGE_SIZE = 6
+
+MAX_PAGE_SIZE = 1000
+
 WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 DATABASES = {
@@ -81,7 +85,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'api.pagination.CustomPagination',
+    'DEFAULT_PAGINATION_CLASS': 'api.pagination.LimitPagination',
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     ),
@@ -94,15 +98,10 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
-    'SEND_ACTIVATION_EMAIL': False,
-    'SEND_CONFIRMATION_EMAIL': False,
-    'USER_CREATE_PASSWORD_RETYPE': False,
-    'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
     'HIDE_USERS': False,
     'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserCreateSerializer',
-        'user': 'api.serializers.CustomUserSerializer',
-        'current_user': 'api.serializers.CustomUserSerializer',
+        'user': 'api.serializers.ExtendedUserSerializer',
+        'current_user': 'api.serializers.ExtendedUserSerializer',
     },
     'PERMISSIONS': {
         'user': ['rest_framework.permissions.AllowAny'],

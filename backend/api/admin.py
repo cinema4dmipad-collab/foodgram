@@ -1,14 +1,18 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin
 from django.contrib import admin
 from django.db.models import Count
 
 from .models import (
     Favorite, Ingredient, Recipe, RecipeIngredient,
-    ShoppingCart, Subscription, Tag, User,
+    ShoppingCart, Subscription, Tag
 )
+
+User = get_user_model()
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(UserAdmin):
     list_display = (
         'id', 'username', 'email', 'first_name', 'last_name'
     )
@@ -18,7 +22,7 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'color', 'slug')
+    list_display = ('id', 'name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
 
 

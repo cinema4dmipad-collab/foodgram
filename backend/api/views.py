@@ -17,20 +17,27 @@ from rest_framework.views import APIView
 
 from .models import (
     Favorite, Ingredient, Recipe, RecipeIngredient,
-    ShoppingCart, Subscription, Tag, User,
+    ShoppingCart, Subscription, Tag
 )
-from .pagination import CustomPagination
-from .permissions import IsAuthor
+from django.contrib.auth import get_user_model
+from .pagination import LimitPagination
 from .serializers import (
     AvatarSerializer, IngredientSerializer,
     RecipeCreateSerializer, RecipeListSerializer,
     RecipeMinifiedSerializer, TagSerializer,
-    UserWithRecipesSerializer, CustomUserSerializer
+    UserWithRecipesSerializer, ExtendedUserSerializer,
+    IngredientInRecipeSerializer
 )
+from .permissions import IsAuthorOrReadOnly
+
+User = get_user_model()
 
 
 def redirect_to_recipe(request, code):
-    recipe = get_object_or_404(Recipe, short_code=code)
+    try:
+        recipe = Recipe.objects.get(short_code=code)
+    except Recipe.DoesNotExist:
+        return redirect('/?error=not_found')
     return redirect(f'/recipes/{recipe.id}/')
 
 
@@ -62,7 +69,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         'tags', 'recipe_ingredients__ingredient'
     )
     permission_classes = (IsAuthenticatedOrReadOnly,)
-    pagination_class = CustomPagination
+    pagination_class = LimitPagination
 
     def get_serializer_class(self):
         if self.action in ('create', 'partial_update', 'update'):
@@ -71,15 +78,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('partial_update', 'update', 'destroy'):
-            return [IsAuthenticated(), IsAuthor()]
+            return [IsAuthenticated(), IsAuthorOrReadOnly()]
         return super().get_permissions()
-
-    def perform_create(self, serializer):
-        tags = self.request.data.get('tags', [])
-        if len(tags) != len(set(tags)):
-            from rest_framework.exceptions import ValidationError
-            raise ValidationError({'tags': 'Теги не должны повторяться'})
-        serializer.save(author=self.request.user)
 
     def partial_update(self, request, *args, **kwargs):
         recipe = get_object_or_404(Recipe, pk=kwargs.get('pk'))
@@ -128,17 +128,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         if is_in_shopping_cart and self.request.user.is_authenticated:
             queryset = queryset.filter(
-                shopping_carts__user=self.request.user
+                in_carts__user=self.request.user
             )
 
         if self.request.user.is_authenticated:
             queryset = queryset.annotate(
-                _is_favorited=Exists(
+                is_favorited=Exists(
                     Favorite.objects.filter(
                         user=self.request.user, recipe=OuterRef('pk')
                     )
                 ),
-                _is_in_shopping_cart=Exists(
+                is_in_shopping_cart=Exists(
                     ShoppingCart.objects.filter(
                         user=self.request.user, recipe=OuterRef('pk')
                     )
@@ -245,7 +245,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class SubscriptionListView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = UserWithRecipesSerializer
-    pagination_class = CustomPagination
+    pagination_class = LimitPagination
 
     def get_queryset(self):
         return User.objects.filter(
@@ -359,14 +359,14 @@ class AvatarView(APIView):
 
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    serializer_class = ExtendedUserSerializer
     permission_classes = []
 
 
 class UserMeView(generics.RetrieveAPIView):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
-    permission_classes = (IsAuthenticated,)
+    serializer_class = ExtendedUserSerializer
+    permission_classes = (IsAuthenticated,) 
 
     def get_object(self):
         return self.request.user
