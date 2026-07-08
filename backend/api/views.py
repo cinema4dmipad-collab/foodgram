@@ -1,13 +1,11 @@
 from django.db.models import Exists, OuterRef, Sum
 from django.db.models.functions import Lower
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
-from rest_framework import generics
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 )

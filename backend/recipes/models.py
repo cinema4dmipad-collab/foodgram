@@ -61,8 +61,14 @@ class Recipe(models.Model):
     text = models.TextField()
     cooking_time = models.PositiveSmallIntegerField(
         validators=[
-            MinValueValidator(AMOUNT_MIN, message='Время приготовления должно быть не менее 1 минуты'),
-            MaxValueValidator(AMOUNT_MAX, message='Время приготовления не может превышать 32767 минут'),
+            MinValueValidator(
+                AMOUNT_MIN,
+                message='Время приготовления должно быть не менее 1 минуты',
+            ),
+            MaxValueValidator(
+                AMOUNT_MAX,
+                message='Время приготовления не может превышать 32767 минут',
+            ),
         ]
     )
     tags = models.ManyToManyField(Tag, related_name='recipes')

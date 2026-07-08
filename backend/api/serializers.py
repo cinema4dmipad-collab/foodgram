@@ -116,7 +116,9 @@ class RecipeListSerializer(serializers.ModelSerializer):
         many=True, source='recipe_ingredients', read_only=True
     )
     is_favorited = serializers.BooleanField(read_only=True, default=False)
-    is_in_shopping_cart = serializers.BooleanField(read_only=True, default=False)
+    is_in_shopping_cart = serializers.BooleanField(
+        read_only=True, default=False
+    )
     image = serializers.SerializerMethodField()
 
     class Meta:
