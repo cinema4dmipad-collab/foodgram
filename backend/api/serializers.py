@@ -3,13 +3,14 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from .fields import Base64ImageField
-from .models import (
-    Ingredient, Recipe, RecipeIngredient,
-    Subscription, Tag
+from recipes.models import (
+    Ingredient, Recipe, RecipeIngredient, Tag
 )
+from .models import Subscription
 
 
 User = get_user_model()
+
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -138,7 +139,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(), many=True
     )
     image = Base64ImageField()
-    
 
     class Meta:
         model = Recipe
@@ -174,7 +174,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         recipe.tags.set(tags_data)
         self._create_ingredients(recipe, ingredients_data)
         return recipe
-    
 
     @transaction.atomic
     def update(self, instance, validated_data):

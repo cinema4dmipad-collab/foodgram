@@ -1,0 +1,164 @@
+import string
+import random
+
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import models
+
+from api.constants import (
+    MAX_LENGTH_TAG,
+    MAX_LENGTH_NAME,
+    MAX_INGREDIENT_NAME,
+    MAX_MEASUREMENT_UNIT,
+    SHORT_CODE_LENGTH,
+    AMOUNT_MIN,
+    AMOUNT_MAX,
+)
+
+
+def generate_short_code(length=SHORT_CODE_LENGTH, max_attempts=10):
+    chars = string.ascii_lowercase + string.digits
+    for _ in range(max_attempts):
+        code = ''.join(random.choices(chars, k=length))
+        if not Recipe.objects.filter(short_code=code).exists():
+            return code
+    raise RuntimeError('Не удалось сгенерировать уникальный short_code')
+
+
+class Tag(models.Model):
+    name = models.CharField(max_length=MAX_LENGTH_TAG, unique=True)
+    slug = models.SlugField(max_length=MAX_LENGTH_TAG, unique=True)
+
+    class Meta:
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
+
+
+class Ingredient(models.Model):
+    name = models.CharField(max_length=MAX_INGREDIENT_NAME)
+    measurement_unit = models.CharField(max_length=MAX_MEASUREMENT_UNIT)
+
+    class Meta:
+        ordering = ('name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'],
+                name='unique_ingredient'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.name}, {self.measurement_unit}'
+
+
+class Recipe(models.Model):
+    author = models.ForeignKey(
+        'api.User', on_delete=models.CASCADE, related_name='recipes'
+    )
+    name = models.CharField(max_length=MAX_LENGTH_NAME)
+    image = models.ImageField(upload_to='recipes/')
+    text = models.TextField()
+    cooking_time = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(AMOUNT_MIN, message='Время приготовления должно быть не менее 1 минуты'),
+            MaxValueValidator(AMOUNT_MAX, message='Время приготовления не может превышать 32767 минут'),
+        ]
+    )
+    tags = models.ManyToManyField(Tag, related_name='recipes')
+    short_code = models.CharField(
+        max_length=SHORT_CODE_LENGTH, unique=True, blank=True, null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def save(self, *args, **kwargs):
+        if not self.short_code:
+            self.short_code = generate_short_code()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class RecipeIngredient(models.Model):
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name='recipe_ingredients'
+    )
+    ingredient = models.ForeignKey(
+        Ingredient, on_delete=models.CASCADE, related_name='recipe_ingredients'
+    )
+    amount = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(
+                AMOUNT_MIN,
+                message=f'Количество должно быть не менее {AMOUNT_MIN}'
+            ),
+            MaxValueValidator(
+                AMOUNT_MAX,
+                message=f'Количество не может превышать {AMOUNT_MAX}'
+            ),
+        ]
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='unique_recipe_ingredient'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.ingredient.name} x{self.amount}'
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        'api.User', on_delete=models.CASCADE, related_name='favorites'
+    )
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name='favorites'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата создания'
+    )
+
+    class Meta:
+        ordering = ('-created_at',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_favorite'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} → {self.recipe}'
+
+
+class ShoppingCart(models.Model):
+    user = models.ForeignKey(
+        'api.User', on_delete=models.CASCADE, related_name='shopping_carts'
+    )
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name='in_carts'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата создания'
+    )
+
+    class Meta:
+        ordering = ('-created_at',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'], name='unique_shopping_cart'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} → {self.recipe}'

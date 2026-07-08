@@ -8,7 +8,8 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from PIL import Image
 
-from api.models import Ingredient, Recipe, RecipeIngredient, Tag, User
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
+from api.models import User
 
 
 class Command(BaseCommand):

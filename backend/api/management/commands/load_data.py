@@ -4,12 +4,12 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from api.models import Ingredient, Tag
+from recipes.models import Ingredient, Tag
 
 TAGS = [
-    {'name': 'Завтрак', 'color': '#E26C2D', 'slug': 'breakfast'},
-    {'name': 'Обед', 'color': '#49B24E', 'slug': 'lunch'},
-    {'name': 'Ужин', 'color': '#8775D2', 'slug': 'dinner'},
+    {'name': 'Завтрак', 'slug': 'breakfast'},
+    {'name': 'Обед', 'slug': 'lunch'},
+    {'name': 'Ужин', 'slug': 'dinner'},
 ]
 
 
