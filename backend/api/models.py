@@ -8,6 +8,8 @@ from .constants import MAX_LENGTH_EMAIL
 class User(AbstractUser):
     email = models.EmailField(max_length=MAX_LENGTH_EMAIL, unique=True)
     avatar = models.ImageField(upload_to='users/', blank=True, null=True)
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']

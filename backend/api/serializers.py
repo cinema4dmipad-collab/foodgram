@@ -186,7 +186,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             instance.tags.clear()
             instance.tags.set(tags_data)
         if ingredients_data is not None:
-            instance.recipe_ingredients.clear()
+            instance.recipe_ingredients.all().delete()
             self._create_ingredients(instance, ingredients_data)
         return instance
 

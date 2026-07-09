@@ -38,18 +38,16 @@ class Command(BaseCommand):
         with open(json_path, 'r', encoding='utf-8') as f:
             ingredients = json.load(f)
 
-        created = 0
-        for item in ingredients:
-            _, was_created = Ingredient.objects.get_or_create(
-                name=item['name'],
-                measurement_unit=item['measurement_unit'],
-            )
-            if was_created:
-                created += 1
+        before = Ingredient.objects.count()
+        Ingredient.objects.bulk_create(
+            [Ingredient(**item) for item in ingredients],
+            ignore_conflicts=True,
+        )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'Ingredients loaded: {created} created, '
-                f'{len(ingredients) - created} already exist'
+                f'Ingredients loaded: '
+                f'{Ingredient.objects.count() - before} created, '
+                f'{before} already exist'
             )
         )

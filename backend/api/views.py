@@ -226,8 +226,12 @@ class UserViewSet(DjoserUserViewSet):
                     {'errors': 'Уже подписан'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            context = self.get_serializer_context()
+            recipes_limit = request.query_params.get('recipes_limit')
+            if recipes_limit:
+                context['recipes_limit'] = int(recipes_limit)
             serializer = UserWithRecipesSerializer(
-                author, context=self.get_serializer_context()
+                author, context=context
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         deleted, _ = Subscription.objects.filter(
