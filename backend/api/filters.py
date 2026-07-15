@@ -1,5 +1,7 @@
 from django.db.models import BooleanField, Exists, OuterRef, Value
-from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
+from django_filters.rest_framework import (
+    FilterSet, BooleanFilter, CharFilter, NumberFilter
+)
 
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 
