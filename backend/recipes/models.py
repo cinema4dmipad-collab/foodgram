@@ -141,39 +141,22 @@ class UserRecipeRelation(models.Model):
     class Meta:
         abstract = True
         ordering = ('-created_at',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_%(app_label)s_%(class)s'
+            )
+        ]
 
     def __str__(self):
         return f'{self.user} → {self.recipe}'
 
 
 class Favorite(UserRecipeRelation):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='favorites'
-    )
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='favorites'
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='unique_favorite'
-            )
-        ]
+    class Meta(UserRecipeRelation.Meta):
+        default_related_name = 'favorites'
 
 
 class ShoppingCart(UserRecipeRelation):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='shopping_carts'
-    )
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='in_carts'
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'], name='unique_shopping_cart'
-            )
-        ]
+    class Meta(UserRecipeRelation.Meta):
+        default_related_name = 'shopping_carts'

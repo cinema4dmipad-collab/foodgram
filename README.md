@@ -111,7 +111,10 @@ docker-compose up
 ## Команды управления
 
 ```bash
-python manage.py load_data          # загрузить ингредиенты и теги
+python manage.py load_data          # загрузить ингредиенты (data/ingredients.json) и теги
+
+# Внутри Docker-контейнера:
+docker exec -it foodgram-backend python manage.py load_data
 python manage.py load_test_data     # загрузить тестовые пользователи и рецепты
 python manage.py clean_data         # очистить тестовые данные
 ```

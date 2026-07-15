@@ -1,9 +1,8 @@
-from django.db.models import BooleanField, Exists, OuterRef, Value
 from django_filters.rest_framework import (
-    FilterSet, BooleanFilter, CharFilter, NumberFilter
+    FilterSet, BooleanFilter, CharFilter, ModelMultipleChoiceFilter
 )
 
-from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
+from recipes.models import Ingredient, Recipe, Tag
 
 
 class IngredientFilter(FilterSet):
@@ -20,38 +19,13 @@ class IngredientFilter(FilterSet):
 
 
 class RecipeFilter(FilterSet):
-    author = NumberFilter(field_name='author_id')
-    tags = CharFilter(method='filter_tags')
+    tags = ModelMultipleChoiceFilter(
+        field_name='tags__slug', queryset=Tag.objects.all(),
+        to_field_name='slug'
+    )
     is_favorited = BooleanFilter(field_name='is_favorited')
     is_in_shopping_cart = BooleanFilter(field_name='is_in_shopping_cart')
 
     class Meta:
         model = Recipe
         fields = ['author', 'tags', 'is_favorited', 'is_in_shopping_cart']
-
-    def filter_tags(self, queryset, name, value):
-        tags = self.request.query_params.getlist('tags')
-        if tags:
-            return queryset.filter(tags__slug__in=tags).distinct()
-        return queryset
-
-    def filter_queryset(self, queryset):
-        if self.request.user.is_authenticated:
-            queryset = queryset.annotate(
-                is_favorited=Exists(
-                    Favorite.objects.filter(
-                        user=self.request.user, recipe=OuterRef('pk')
-                    )
-                ),
-                is_in_shopping_cart=Exists(
-                    ShoppingCart.objects.filter(
-                        user=self.request.user, recipe=OuterRef('pk')
-                    )
-                ),
-            )
-        else:
-            queryset = queryset.annotate(
-                is_favorited=Value(False, output_field=BooleanField()),
-                is_in_shopping_cart=Value(False, output_field=BooleanField()),
-            )
-        return super().filter_queryset(queryset)

@@ -1,6 +1,6 @@
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
 
 from .fields import Base64ImageField
 from recipes.models import (
@@ -34,7 +34,7 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         if obj.image and obj.image.url:
             return obj.image.url
-        return None
+        return ""
 
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
@@ -64,11 +64,13 @@ class ExtendedUserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        if request and request.user.is_authenticated and obj:
-            return Subscription.objects.filter(
+        return bool(
+            request
+            and request.user.is_authenticated
+            and Subscription.objects.filter(
                 user=request.user, author=obj
             ).exists()
-        return False
+        )
 
     def get_avatar(self, obj):
         if obj.avatar and obj.avatar.url:
@@ -87,14 +89,6 @@ class UserWithRecipesSerializer(ExtendedUserSerializer):
             'last_name', 'is_subscribed', 'recipes',
             'recipes_count', 'avatar',
         )
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Subscription.objects.filter(
-                user=request.user, author=obj
-            ).exists()
-        return False
 
     def get_recipes(self, obj):
         recipes_limit = 3
@@ -117,6 +111,18 @@ class UserWithRecipesSerializer(ExtendedUserSerializer):
 
 class AvatarSerializer(serializers.Serializer):
     avatar = Base64ImageField()
+
+    def update(self, instance, validated_data):
+        instance.avatar = validated_data.get('avatar', instance.avatar)
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and ret.get('avatar'):
+            ret['avatar'] = request.build_absolute_uri(ret['avatar'])
+        return ret
 
 
 class RecipeListSerializer(serializers.ModelSerializer):
@@ -142,7 +148,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         if obj.image and obj.image.url:
             return obj.image.url
-        return None
+        return ""
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -205,15 +211,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return instance
 
     def _create_ingredients(self, recipe, ingredients_data):
-        seen = set()
-        for item in ingredients_data:
-            ingredient_id = item['ingredient'].pk
-            if ingredient_id in seen:
-                raise serializers.ValidationError(
-                    {'ingredients': f'Ингредиент с id {ingredient_id} указан '
-                                    f'более одного раза'}
-                )
-            seen.add(ingredient_id)
         RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
                 recipe=recipe,

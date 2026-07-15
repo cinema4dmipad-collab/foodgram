@@ -1,7 +1,6 @@
-from django.db.models import Sum
-
+from django.contrib.auth import get_user_model
+from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
-
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status, viewsets
@@ -17,7 +16,6 @@ from recipes.models import (
     ShoppingCart, Tag
 )
 from users.models import Subscription
-from django.contrib.auth import get_user_model
 from .pagination import LimitPagination
 from .serializers import (
     AvatarSerializer, IngredientSerializer,
@@ -56,6 +54,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = LimitPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.is_authenticated:
+            return queryset.annotate(
+                is_favorited=Exists(
+                    Favorite.objects.filter(
+                        user=self.request.user, recipe=OuterRef('pk')
+                    )
+                ),
+                is_in_shopping_cart=Exists(
+                    ShoppingCart.objects.filter(
+                        user=self.request.user, recipe=OuterRef('pk')
+                    )
+                ),
+            )
+        return queryset.annotate(
+            is_favorited=Value(False, output_field=BooleanField()),
+            is_in_shopping_cart=Value(False, output_field=BooleanField()),
+        )
 
     def get_serializer_class(self):
         if self.action in ('create', 'partial_update', 'update'):
@@ -130,7 +148,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         ingredients = (
             RecipeIngredient.objects
-            .filter(recipe__in_carts__user=request.user)
+            .filter(recipe__shopping_carts__user=request.user)
             .values('ingredient__name', 'ingredient__measurement_unit')
             .annotate(total_amount=Sum('amount'))
             .order_by('ingredient__name')
@@ -179,12 +197,12 @@ class UserViewSet(DjoserUserViewSet):
     def subscribe(self, request, id=None):
         author = self.get_object()
         user = request.user
-        if user == author:
-            return Response(
-                {'errors': 'Нельзя подписаться на себя'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         if request.method == 'POST':
+            if user == author:
+                return Response(
+                    {'errors': 'Нельзя подписаться на себя'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             _, created = Subscription.objects.get_or_create(
                 user=user, author=author
             )
@@ -218,12 +236,8 @@ class UserViewSet(DjoserUserViewSet):
                 user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         serializer = AvatarSerializer(
-            data=request.data, context={'request': request}
+            instance=user, data=request.data, context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        user.avatar = serializer.validated_data['avatar']
-        user.save()
-        return Response(
-            {'avatar': request.build_absolute_uri(user.avatar.url)},
-            status=status.HTTP_200_OK,
-        )
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
