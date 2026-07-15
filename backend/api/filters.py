@@ -53,5 +53,3 @@ class RecipeFilter(FilterSet):
                 is_in_shopping_cart=Value(False, output_field=BooleanField()),
             )
         return super().filter_queryset(queryset)
-
-
