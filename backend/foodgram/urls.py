@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.generic import TemplateView
 
-from api.views import redirect_to_recipe
+from recipes.views import redirect_to_recipe
 
 urlpatterns = [
     path('api/', include('api.urls')),

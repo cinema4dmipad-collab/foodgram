@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from api.models import Subscription
+from users.models import Subscription
 from recipes.models import Recipe
 
 User = get_user_model()

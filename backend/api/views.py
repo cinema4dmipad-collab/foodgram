@@ -1,7 +1,7 @@
-from django.db.models import Exists, OuterRef, Sum
-from django.db.models.functions import Lower
+from django.db.models import Sum
+
 from django.http import HttpResponse
-from django.shortcuts import redirect
+
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status, viewsets
@@ -11,12 +11,12 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
-from recipes.filters import RecipeFilter
+from .filters import IngredientFilter, RecipeFilter
 from recipes.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient,
     ShoppingCart, Tag
 )
-from .models import Subscription
+from users.models import Subscription
 from django.contrib.auth import get_user_model
 from .pagination import LimitPagination
 from .serializers import (
@@ -30,14 +30,6 @@ from .permissions import IsAuthorOrReadOnly
 User = get_user_model()
 
 
-def redirect_to_recipe(request, code):
-    try:
-        recipe = Recipe.objects.get(short_code=code)
-    except Recipe.DoesNotExist:
-        return redirect('/?error=not_found')
-    return redirect(f'/recipes/{recipe.id}/')
-
-
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -47,18 +39,13 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
     lookup_field = 'id'
-
-    def get_queryset(self):
-        name = self.request.query_params.get('name', '')
-        if name:
-            return Ingredient.objects.annotate(
-                name_lower=Lower('name')
-            ).filter(name_lower__startswith=name.lower())
-        return Ingredient.objects.all()
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -74,23 +61,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ('create', 'partial_update', 'update'):
             return RecipeCreateSerializer
         return RecipeListSerializer
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if self.request.user.is_authenticated:
-            queryset = queryset.annotate(
-                is_favorited=Exists(
-                    Favorite.objects.filter(
-                        user=self.request.user, recipe=OuterRef('pk')
-                    )
-                ),
-                is_in_shopping_cart=Exists(
-                    ShoppingCart.objects.filter(
-                        user=self.request.user, recipe=OuterRef('pk')
-                    )
-                ),
-            )
-        return queryset
 
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
@@ -194,9 +164,6 @@ class UserViewSet(DjoserUserViewSet):
         queryset = User.objects.filter(subscribers__user=request.user)
         page = self.paginate_queryset(queryset)
         context = self.get_serializer_context()
-        recipes_limit = request.query_params.get('recipes_limit')
-        if recipes_limit:
-            context['recipes_limit'] = int(recipes_limit)
         if page is not None:
             serializer = UserWithRecipesSerializer(
                 page, many=True, context=context
@@ -226,12 +193,8 @@ class UserViewSet(DjoserUserViewSet):
                     {'errors': 'Уже подписан'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            context = self.get_serializer_context()
-            recipes_limit = request.query_params.get('recipes_limit')
-            if recipes_limit:
-                context['recipes_limit'] = int(recipes_limit)
             serializer = UserWithRecipesSerializer(
-                author, context=context
+                author, context=self.get_serializer_context()
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         deleted, _ = Subscription.objects.filter(

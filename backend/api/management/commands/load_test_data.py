@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand
 from PIL import Image
 
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
-from api.models import User
+from users.models import User
 
 
 class Command(BaseCommand):

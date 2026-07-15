@@ -40,9 +40,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description='В избранном')
     def favorite_count(self, obj):
-        if hasattr(obj, '_favorite_count'):
-            return obj._favorite_count
-        return obj.favorites.count()
+        return obj._favorite_count
 
 
 @admin.register(Favorite)

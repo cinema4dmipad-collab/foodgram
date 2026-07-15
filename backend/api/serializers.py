@@ -6,7 +6,7 @@ from .fields import Base64ImageField
 from recipes.models import (
     Ingredient, Recipe, RecipeIngredient, Tag
 )
-from .models import Subscription
+from users.models import Subscription
 
 
 User = get_user_model()
@@ -38,7 +38,7 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), source='ingredient')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
@@ -95,7 +95,15 @@ class UserWithRecipesSerializer(ExtendedUserSerializer):
         return False
 
     def get_recipes(self, obj):
-        recipes_limit = self.context.get('recipes_limit', 3)
+        recipes_limit = 3
+        request = self.context.get('request')
+        if request:
+            try:
+                recipes_limit = int(
+                    request.query_params.get('recipes_limit', recipes_limit)
+                )
+            except (ValueError, TypeError):
+                pass
         recipes = obj.recipes.all()[:recipes_limit]
         return RecipeMinifiedSerializer(
             recipes, many=True, context=self.context
@@ -164,6 +172,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'tags': 'Теги не должны повторяться'}
             )
+        ingredients = data.get('ingredients')
+        ingredient_ids = [item['ingredient'].id for item in ingredients]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            raise serializers.ValidationError(
+                {'ingredients': 'Ингредиенты не должны повторяться'}
+            )
         return data
 
     @transaction.atomic
@@ -179,21 +193,19 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredients', None)
-        tags_data = validated_data.pop('tags', None)
+        ingredients_data = validated_data.pop('ingredients')
+        tags_data = validated_data.pop('tags')
         instance = super().update(instance, validated_data)
-        if tags_data is not None:
-            instance.tags.clear()
-            instance.tags.set(tags_data)
-        if ingredients_data is not None:
-            instance.recipe_ingredients.all().delete()
-            self._create_ingredients(instance, ingredients_data)
+        instance.tags.clear()
+        instance.tags.set(tags_data)
+        instance.recipe_ingredients.all().delete()
+        self._create_ingredients(instance, ingredients_data)
         return instance
 
     def _create_ingredients(self, recipe, ingredients_data):
         seen = set()
         for item in ingredients_data:
-            ingredient_id = item['id'].pk
+            ingredient_id = item['ingredient'].pk
             if ingredient_id in seen:
                 raise serializers.ValidationError(
                     {'ingredients': f'Ингредиент с id {ingredient_id} указан '
@@ -203,7 +215,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
                 recipe=recipe,
-                ingredient_id=item['id'].pk,
+                ingredient_id=item['ingredient'].pk,
                 amount=item['amount'],
             )
             for item in ingredients_data

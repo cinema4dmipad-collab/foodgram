@@ -1,10 +1,11 @@
 import string
 import random
 
+from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
-from api.constants import (
+from .constants import (
     MAX_LENGTH_TAG,
     MAX_LENGTH_NAME,
     MAX_INGREDIENT_NAME,
@@ -13,6 +14,8 @@ from api.constants import (
     AMOUNT_MIN,
     AMOUNT_MAX,
 )
+
+User = get_user_model()
 
 
 def generate_short_code(length=SHORT_CODE_LENGTH, max_attempts=10):
@@ -54,7 +57,7 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     author = models.ForeignKey(
-        'api.User', on_delete=models.CASCADE, related_name='recipes'
+        User, on_delete=models.CASCADE, related_name='recipes'
     )
     name = models.CharField(max_length=MAX_LENGTH_NAME)
     image = models.ImageField(upload_to='recipes/')
@@ -63,11 +66,11 @@ class Recipe(models.Model):
         validators=[
             MinValueValidator(
                 AMOUNT_MIN,
-                message='Время приготовления должно быть не менее 1 минуты',
+                message=f'Время приготовления должно быть не менее {AMOUNT_MIN} минуты',
             ),
             MaxValueValidator(
                 AMOUNT_MAX,
-                message='Время приготовления не может превышать 32767 минут',
+                message=f'Время приготовления не может превышать {AMOUNT_MAX} минут',
             ),
         ]
     )
@@ -121,20 +124,31 @@ class RecipeIngredient(models.Model):
         return f'{self.ingredient.name} x{self.amount}'
 
 
-class Favorite(models.Model):
-    user = models.ForeignKey(
-        'api.User', on_delete=models.CASCADE, related_name='favorites'
-    )
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='favorites'
-    )
+class UserRecipeRelation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата создания'
     )
 
     class Meta:
+        abstract = True
         ordering = ('-created_at',)
+
+    def __str__(self):
+        return f'{self.user} → {self.recipe}'
+
+
+class Favorite(UserRecipeRelation):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='favorites'
+    )
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name='favorites'
+    )
+
+    class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'],
@@ -142,29 +156,18 @@ class Favorite(models.Model):
             )
         ]
 
-    def __str__(self):
-        return f'{self.user} → {self.recipe}'
 
-
-class ShoppingCart(models.Model):
+class ShoppingCart(UserRecipeRelation):
     user = models.ForeignKey(
-        'api.User', on_delete=models.CASCADE, related_name='shopping_carts'
+        User, on_delete=models.CASCADE, related_name='shopping_carts'
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name='in_carts'
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
-    )
 
     class Meta:
-        ordering = ('-created_at',)
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'], name='unique_shopping_cart'
             )
         ]
-
-    def __str__(self):
-        return f'{self.user} → {self.recipe}'
