@@ -116,7 +116,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = '/app/result_build/'
 _frontend_static = BASE_DIR.parent / 'frontend' / 'build' / 'static'
 if _frontend_static.exists():
     STATICFILES_DIRS = [_frontend_static]
